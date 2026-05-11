@@ -7,6 +7,18 @@ sys.path.append(str(Path(__file__).parent.parent))
 import additional
 
 def menu(state):
+    def draw_text_with_outline(surface, text, text_font, center_pos, color, outline_color=(0, 0, 0)):
+        main = text_font.render(text, True, color)
+        rect = main.get_rect(center=center_pos)
+
+        offsets = [(-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, -2), (-2, 2), (2, 2)]
+
+        for ox, oy in offsets:
+            outline = text_font.render(text, True, outline_color)
+            surface.blit(outline, (rect.x + ox, rect.y + oy))
+
+        surface.blit(main, rect)
+
     pygame.init()
 
     # get screen width & height
@@ -17,6 +29,7 @@ def menu(state):
     icon = pygame.image.load(additional.resource_path("resources/images/pp-icon.png"))
     bg_p = pygame.image.load(additional.resource_path("resources/images/pp-bg-title.png"))
     chase_img = pygame.image.load(additional.resource_path("resources/images/pp-chase.png"))
+    skye_img = pygame.image.load(additional.resource_path("resources/images/pp-skye.png"))
 
     # Scale bg
     def scale(picture):
@@ -43,32 +56,41 @@ def menu(state):
     font = pygame.font.Font(font_path, 150)
     play_text = font.render("PLAY", True, (255, 255, 255))
     button_rect = pygame.Rect(0, 0, 400, 150)
-    button_rect.center = (width//2, height//3)
+    button_rect.center = (width//2, int(height * 3//7))
     play_rect = play_text.get_rect(center=button_rect.center)
     play_rect.y += 15
 
-    # Chase
-    chase_scaled = pygame.transform.scale(chase_img, (chase_img.get_width()//2, chase_img.get_height()//2))
-    chase_rect = chase_scaled.get_rect()
-    chase_rect.center = (width // 2, height // 2)
+    dog_size = (400, 400)
 
-    overlay = pygame.Surface((chase_rect.width, chase_rect.height), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 0))
-    pygame.draw.rect(overlay, (128, 128, 128, 150), overlay.get_rect(), border_radius=20)
+    # Chase
+    chase_scaled = pygame.transform.scale(chase_img, dog_size)
+    chase_rect = chase_scaled.get_rect()
+    chase_rect.center = (width * 2//3, height // 2)
+    overlay_chase = pygame.Surface((chase_rect.width, chase_rect.height), pygame.SRCALPHA)
+    overlay_chase.fill((0, 0, 0, 0))
+    pygame.draw.rect(overlay_chase, (128, 128, 128, 150), overlay_chase.get_rect(), border_radius=20)
+
+    skye_scaled = pygame.transform.scale(skye_img, dog_size)
+    skye_rect = skye_scaled.get_rect()
+    skye_rect.center = (width * 1//3, height // 2)
+    overlay_skye = pygame.Surface((skye_rect.width, skye_rect.height), pygame.SRCALPHA)
+    overlay_skye.fill((0, 0, 0, 0))
+    pygame.draw.rect(overlay_skye, (128, 128, 128, 150), overlay_skye.get_rect(), border_radius=20)
+    pygame.draw.rect(overlay_skye, (128, 128, 128, 150), overlay_skye.get_rect(), border_radius=20)
 
     def menu_start():
         bg_2 = pygame.image.load(additional.resource_path("resources/images/pp-bg-tower.png"))
         n_bg = scale(bg_2)
         n_state = "menu"
-        n_chase = True
-        return n_bg, n_state, n_chase
+        n_show_dogs = True
+        return n_bg, n_state, n_show_dogs
 
     # main loop
-    chase = False
+    show_dogs = False
     running = True
 
     if state == "menu":
-        bg, state, chase = menu_start()
+        bg, state, show_dogs = menu_start()
 
     while running:
 
@@ -82,19 +104,34 @@ def menu(state):
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if button_rect.collidepoint(event.pos):
-                    bg, state, chase = menu_start()
-                elif chase_rect.collidepoint(event.pos) and chase:
-                    pygame.quit()
-                    return "chase"
+                    bg, state, show_dogs = menu_start()
+                elif show_dogs:
+                    if chase_rect.collidepoint(event.pos):
+                        pygame.quit()
+                        return "chase"
+                    if skye_rect.collidepoint(event.pos):
+                        pygame.quit()
+                        return "skye"
 
         # DRAWING
         screen.blit(bg, (0, 0))
         if state == "title":
             pygame.draw.rect(screen, (0,0,0), button_rect, border_radius=20)
             screen.blit(play_text, play_rect)
-        if chase:
-            screen.blit(overlay, chase_rect)
+            draw_text_with_outline(
+                screen,
+                "HILF DER PAW PATROL!",
+                font,
+                (width // 2, int(height * 1//5)),
+                (0, 100, 200),
+                (0, 0, 0)
+            )
+        if show_dogs:
+            screen.blit(overlay_chase, chase_rect)
             screen.blit(chase_scaled, chase_rect)
+
+            screen.blit(overlay_skye, skye_rect)
+            screen.blit(skye_scaled, skye_rect)
 
         pygame.display.flip()
 
